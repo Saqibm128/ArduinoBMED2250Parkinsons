@@ -250,11 +250,14 @@ delay(1000);
 
 void loop() {
     unsigned long time = millis();
-    Serial.println("Time:");
+    Serial.print("Time: ");
     Serial.println(time);
     
     // if programming failed, don't try to do anything
-    if (!dmpReady) return;
+    if (!dmpReady) {
+      Serial.println("Programming Failed");  
+      return;
+    };
 
     // wait for MPU interrupt or extra packet(s) available
     while (!mpuInterrupt && fifoCount < packetSize) {
@@ -351,7 +354,7 @@ void loop() {
             // display real acceleration, adjusted to remove gravity
             mpu.dmpGetQuaternion(&q, fifoBuffer);
             mpu.dmpGetAccel(&aa, fifoBuffer);
-            Serial.print("aa\t");
+            Serial.print("aaWG\t");
             Serial.print(aa.x);
             Serial.print("\t");
             Serial.print(aa.y);
