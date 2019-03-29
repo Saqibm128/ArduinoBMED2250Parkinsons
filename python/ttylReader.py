@@ -6,7 +6,8 @@ from multiprocessing import Process
 from multiprocessing.managers import BaseManager
 
 class TTYLReader():
-    def __init__(self, fn, delay=None, debug=False):
+    def __init__(self, fn, delay=None, debug=False, f=None):
+        self.f = f
         self.fn = fn
         self.data = pd.DataFrame(columns=["yaw", "pitch", "roll", "x", "y", "z"])
         self.currIndex = None

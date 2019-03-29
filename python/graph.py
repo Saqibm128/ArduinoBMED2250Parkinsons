@@ -12,6 +12,53 @@ fig, ax = plt.subplots()
 xdata, ydata = [], []
 ln, = plt.plot([], [], 'ro')
 
+def plotAccelToFall(dfBack, dfAngVelBack, dfThigh, dfAngThigh):
+    accelTotal = (dfBack['X'] ** 2 + dfBack['Y'] ** 2 + dfBack['Z'] ** 2) ** 0.5
+    angVelBackTotal = (dfAngBack['X'] ** 2 + dfAngBack['Y'] ** 2 + dfAngBack['Z'] ** 2) ** 0.5
+    angVelThighTotal = (dfAngThigh['X'] ** 2 + dfAngThigh['Y'] ** 2 + dfAngThigh['Z'] ** 2) ** 0.5
+    accelThigh =(dfThigh['X'] ** 2 + dfThigh['Y'] ** 2 + dfThigh['Z'] ** 2) ** 0.5
+
+    isMoving = ((accelTotal.rolling(10).max() - accelTotal.rolling(10).min()) > 4) &\
+         ((accelThigh.rolling(10).max() - accelThigh.rolling(10).min()) > 4) & \
+         ((angVelBackTotal.rolling(10).max() - angVelBackTotal.rolling(10).min()) > 60 / 360 * 2 * np.pi) &\
+         ((angVelThighTotal.rolling(10).max() - angVelThighTotal.rolling(10).min()) > 60 / 360 * 2 * np.pi)
+
+    isIntentionalAccel = (accelThigh > 9.8 * 1.05 & accelTotal > 9.8 * 1.05)
+    isIntentionalAngVel = (angVelThighTotal.rolling(10).mean() > np.radians(340))
+    isIntentional = isIntentionalAccel & isIntentionalAngVel
+
+    anglesBack = dfBack['Z'].copy()
+    anglesBack[anglesBack > 9.8] = 9.8
+    anglesBack[anglesBack < -9.8] = -9.8
+    anglesBack = anglesBack / 9.8
+    anglesBack = np.degrees(np.arcsin(anglesBack))
+
+    anglesThigh = dfThigh['Z'].copy()
+    anglesThigh[anglesThigh > 9.8] = 9.8
+    anglesThigh[anglesThigh < -9.8] = -9.8
+    anglesThigh = anglesThigh / 9.8
+    anglesThigh = np.degrees(np.arcsin(anglesThigh))
+
+    isStanding = (anglesThigh > 35) & (anglesBack > 35) #we really gotta fix the sample rate
+
+    t = np.arange(0, anglesThigh.shape[0]/10 + 0.1, 0.1)
+
+    fig, ax1 = plt.subplots()
+    ax1.plot(t, anglesBack, 'b-')
+    ax1.set_xlabel('time (s)')
+    # Make the y-axis label, ticks and tick labels match the line color.
+    ax1.set_ylabel('Back Angle (degrees)', color='b')
+    ax1.tick_params('y', colors='b')
+
+    ax2 = ax1.twinx()
+    ax2.plot(t, isMoving & isStanding.shift(0) & (isIntentionalAccel | isIntentionalAngVel), 'r')
+    ax2.set_ylabel('Fall Detection', color='r')
+    ax2.tick_params('y', colors='r')
+
+    fig.tight_layout()
+    plt.title("Simulated Fall Detection")
+    plt.show()
+
 def init():
     ax.set_xlim(0,100)
     ax.set_ylim(-30, 180)
