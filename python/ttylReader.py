@@ -30,9 +30,7 @@ class TTYLReader():
             rawSerialString = str(rawSerialString)[:-4] if rawSerialString is not None else None
             if rawSerialString is not None and "Time" in rawSerialString:
                 rawSerialStrings = rawSerialString.split()
-                possibleCurrIndex = int(rawSerialStrings[1])
-                if int(possibleCurrIndex) > self.currIndex: # sanity check
-                    self.currIndex = int(rawSerialStrings[1])
+                possibleCurrIndex = int(rawSerialStrings[1].replace("\\", ""))
                 self.data.loc[self.currIndex] = pd.Series(index=self.data.columns)
             timeFound = True
         while (timeFound):
@@ -43,9 +41,11 @@ class TTYLReader():
                 self.debugPrint(rawSerialString)
                 rawSerialString = str(rawSerialString)[:-4] if rawSerialString is not None else None
                 if "Time" in rawSerialString:
-                    rawSerialString = rawSerialString.split()
-                    self.currIndex = int(rawSerialString[1])
-                    self.data.loc[self.currIndex] = pd.Series()
+                    rawSerialStrings = rawSerialString.split()
+                    possibleCurrIndex = int(rawSerialStrings[1].replace("\\", ""))
+                    if self.currIndex is None or int(possibleCurrIndex) > self.currIndex: # sanity check
+                        self.currIndex = possibleCurrIndex
+                        self.data.loc[self.currIndex] = pd.Series()
                 elif "ypr" in rawSerialString:
                     splitRawString = rawSerialString.split("\\t")
                     self.data.loc[self.currIndex]['yaw'] = np.float32(splitRawString[1])
@@ -65,7 +65,7 @@ def readDataAsyncProcess(fn="/dev/ttyS5"):
     BaseManager.register('TTYLReader', TTYLReader)
     manager = BaseManager()
     manager.start()
-    reader = manager.TTYLReader(fn, debug=False)
+    reader = manager.TTYLReader(fn)
     p = Process(target=reader.readDataAsyncProcessHelper)
     p.start()
     return reader, p
