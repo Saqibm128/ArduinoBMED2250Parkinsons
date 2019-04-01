@@ -44,16 +44,20 @@ class TTYLReader():
                 if "Time" in rawSerialString:
                     rawSerialStrings = rawSerialString.split()
                     possibleCurrIndex = int(rawSerialStrings[1].replace("\\", ""))
-                    if self.currIndex is None or int(possibleCurrIndex) > self.currIndex: # sanity check
-                        self.currIndex = possibleCurrIndex
-                        self.data.loc[self.currIndex] = pd.Series()
+                    # if self.currIndex is None or int(possibleCurrIndex) > self.currIndex: # sanity check
+                    self.currIndex = possibleCurrIndex
+                    self.data.loc[self.currIndex] = pd.Series()
                 elif "ypr" in rawSerialString:
                     splitRawString = rawSerialString.split("\\t")
+                    if not np.isnan(self.data.loc[self.currIndex]['yaw']):
+                        self.currIndex +=1
                     self.data.loc[self.currIndex]['yaw'] = np.float32(splitRawString[1])
                     self.data.loc[self.currIndex]['pitch'] = np.float32(splitRawString[2])
                     self.data.loc[self.currIndex]['roll'] = np.float32(splitRawString[2])
                 elif "aaWG" in rawSerialString:
                     splitRawString = rawSerialString.split("\\t")
+                    if not np.isnan(self.data.loc[self.currIndex]['x']):
+                        self.currIndex +=1
                     self.data.loc[self.currIndex]['x'] = np.float32(splitRawString[1])
                     self.data.loc[self.currIndex]['y'] = np.float32(splitRawString[2])
                     self.data.loc[self.currIndex]['z'] = np.float32(splitRawString[2])
@@ -62,11 +66,11 @@ class TTYLReader():
                 self.debugPrint("exception occurred")
                 self.debugPrint(e)
 
-def readDataAsyncProcess(fn="/dev/ttyS5"):
+def readDataAsyncProcess(fn="/dev/ttyS6", debug=False):
     BaseManager.register('TTYLReader', TTYLReader)
     manager = BaseManager()
     manager.start()
-    reader = manager.TTYLReader(fn)
+    reader = manager.TTYLReader(fn, debug=debug)
     p = Process(target=reader.readDataAsyncProcessHelper)
     p.start()
     return reader, p
@@ -74,7 +78,7 @@ def readDataAsyncProcess(fn="/dev/ttyS5"):
 
 
 if __name__ == "__main__":
-    reader, process = readDataAsyncProcess()
-    time.sleep(4)
+    reader, process = readDataAsyncProcess(debug=True)
+    time.sleep(10)
     process.terminate()
     print(reader.getData())

@@ -5,12 +5,11 @@ import time, sys
 from ttylReader import readDataAsyncProcess
 
 reader, p = readDataAsyncProcess()
-time.sleep(3)
 
 
 fig, ax = plt.subplots()
 xdata, ydata = [], []
-ln, = plt.plot([], [], 'ro')
+ln, = plt.plot([], [], 'r')
 
 def plotAccelToFall(dfBack, dfAngVelBack, dfThigh, dfAngThigh):
     accelTotal = (dfBack['X'] ** 2 + dfBack['Y'] ** 2 + dfBack['Z'] ** 2) ** 0.5
@@ -61,23 +60,28 @@ def plotAccelToFall(dfBack, dfAngVelBack, dfThigh, dfAngThigh):
 
 def init():
     ax.set_xlim(0,100)
-    ax.set_ylim(-30, 180)
+    ax.set_ylim(-30, 90)
     return ln,
 
 def update(frame):
+    # print(reader.getData())
     data = reader.getData()['x'].iloc[-100:]
-    data = np.degrees(np.arcsin(data/3833))
-    print(data.max())
-    xdata = np.arange(100)
+    # print(data)
+    # print(np.arcsin(data/3833))
+
+    data = np.degrees(np.arcsin(((data)/8500)))
+    # print(data.index)
+    xdata = np.arange(100 if len(data) > 100 else len(data))
     ydata = data.values
+    # print(ydata)
     ln.set_data(xdata, ydata)
     return (ln,)
 
 ani = FuncAnimation(fig, update,
                     frames=np.linspace(0, 2*np.pi, 2),
-                    init_func=init,
-                    blit=True,)
+                    init_func=init)
 plt.show()
+reader.getData().to_csv("data/single_sensor_{}.csv".format(time.time()))
 
 # To save the animation, use e.g.
 #
